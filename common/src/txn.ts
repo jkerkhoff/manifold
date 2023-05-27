@@ -45,7 +45,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   toType: SourceType
 
   amount: number
-  token: 'M$' | 'SHARE' // | 'USD' | MarketOutcome
+  token: 'M$' | 'SHARE'
 
   category: AnyTxnType['category']
 
@@ -164,13 +164,19 @@ type CancelUniqueBettorBonus = {
 }
 
 type ManaPurchase = {
+  fromId: 'EXTERNAL'
   fromType: 'BANK'
   toType: 'USER'
   category: 'MANA_PURCHASE'
-  data: {
-    iapTransactionId: string
-    type: 'apple'
-  }
+  data:
+    | {
+        iapTransactionId: string
+        type: 'apple'
+      }
+    | {
+        stripeTransactionId: string
+        type: 'stripe'
+      }
 }
 
 type SignupBonus = {

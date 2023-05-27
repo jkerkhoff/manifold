@@ -5,6 +5,8 @@ import { Request, Response } from 'express'
 import { getPrivateUser, getUser, isProd, payUsers } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { track } from 'shared/analytics'
+import { APIError } from './helpers'
+import { runTxn } from 'shared/run-txn'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -41,7 +43,7 @@ const manticDollarStripePrice = isProd()
       1000: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
       2500: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
       10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
-      100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho'
+      100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho',
     }
 
 export const createcheckoutsession = async (req: Request, res: Response) => {
@@ -135,8 +137,26 @@ const issueMoneys = async (session: StripeSession) => {
       session,
       timestamp: Date.now(),
     })
-    payUsers(trans, [{ userId, payout: deposit, deposit }])
-    return true
+
+    const manaPurchaseTxn = {
+      fromId: 'EXTERNAL',
+      fromType: 'BANK',
+      toId: userId,
+      toType: 'USER',
+      amount: deposit,
+      token: 'M$',
+      category: 'MANA_PURCHASE',
+      data: { stripeTransactionId: stripeDoc.id, type: 'stripe' },
+      description: `Deposit M$${deposit} from BANK for mana purchase`,
+    } as const
+
+    const result = await runTxn(trans, manaPurchaseTxn)
+
+    if (result.status === 'error') {
+      throw new APIError(500, result.message ?? 'An unknown error occurred')
+    }
+
+    return result
   })
 
   if (success) {
