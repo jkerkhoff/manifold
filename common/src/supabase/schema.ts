@@ -1279,21 +1279,18 @@ export interface Database {
       }
       user_follows: {
         Row: {
-          data: Json
+          created_time: string
           follow_id: string
-          fs_updated_time: string
           user_id: string
         }
         Insert: {
-          data: Json
+          created_time?: string
           follow_id: string
-          fs_updated_time: string
           user_id: string
         }
         Update: {
-          data?: Json
+          created_time?: string
           follow_id?: string
-          fs_updated_time?: string
           user_id?: string
         }
         Relationships: []
